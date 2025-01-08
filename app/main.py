@@ -27,6 +27,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 class User(BaseModel):
     username: str
     email: str
@@ -34,6 +36,10 @@ class User(BaseModel):
     
 class UserName(BaseModel):
     username: str
+    
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 
 # 정적 파일 디렉토리 설정
@@ -69,6 +75,21 @@ async def register_user(user: User):
     
     await users_collection.insert_one(user_in_db.dict())
     return {"message": "User created successfully"}
+
+@app.post("/login")
+async def login_user(user: UserLogin):
+    # 사용자 이름으로 사용자 검색
+    existing_user = await users_collection.find_one({"username": user.username})
+    
+    if not existing_user:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    
+    # 비밀번호 비교
+    if not pwd_context.verify(user.password, existing_user["password"]):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    
+    # 로그인 성공
+    return {"message": "Login successful"}
 
 @app.post("/read_user")
 async def read_user(name: UserName):

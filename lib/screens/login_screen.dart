@@ -20,12 +20,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final success = await _authService.login(username, password);
     if (success) {
-      Navigator.pushReplacementNamed(context, "/home"); // 로그인 후 홈 화면으로 이동
+      // 로그인 성공 시 팝업 표시
+      _showLoginSuccessDialog();
     } else {
       setState(() {
         _errorMessage = "Invalid username or password";
       });
     }
+  }
+
+  // 로그인 성공 시 팝업
+  void _showLoginSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Login Successful"),
+          content: const Text("You have successfully logged in."),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, "/home");
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
