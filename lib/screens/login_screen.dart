@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -11,33 +12,44 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
   String _errorMessage = "";
 
+  // FastAPI 서버 URL (로컬 환경에 맞게 변경)
+  final String baseUrl = "http://0.0.0.0:8000";  // 에뮬레이터에서 10.0.2.2 사용
+
   void _handleLogin() async {
-  final username = _usernameController.text;
-  final password = _passwordController.text;
+    final username = _usernameController.text;
+    final password = _passwordController.text;
 
-  if (username.isEmpty || password.isEmpty) {
-    setState(() {
-      _errorMessage = "Username and password cannot be empty.";
-    });
-    return;
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = "Username and password cannot be empty.";
+      });
+      return;
+    }
+
+    // FastAPI 서버로 로그인 요청
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // 로그인 성공
+      _showLoginSuccessDialog();
+    } else {
+      // 로그인 실패
+      setState(() {
+        _errorMessage = "LoginFail";
+      });
+    }
   }
 
-  print("Attempting to log in with username: $username");
-
-  final success = await _authService.login(username, password);
-  if (success) {
-    _showLoginSuccessDialog();
-  } else {
-    setState(() {
-      _errorMessage = "Invalid username or password";
-    });
-  }
-}
-
-  // 로그인 성공 시 팝업
+  // 로그인 성공 팝업
   void _showLoginSuccessDialog() {
     showDialog(
       context: context,

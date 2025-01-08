@@ -27,8 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 class User(BaseModel):
     username: str
     email: str
@@ -82,11 +80,11 @@ async def login_user(user: UserLogin):
     existing_user = await users_collection.find_one({"username": user.username})
     
     if not existing_user:
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        raise HTTPException(status_code=400, detail="Invalid username")
     
     # 비밀번호 비교
     if not pwd_context.verify(user.password, existing_user["password"]):
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        raise HTTPException(status_code=400, detail="Invalid password")
     
     # 로그인 성공
     return {"message": "Login successful"}
