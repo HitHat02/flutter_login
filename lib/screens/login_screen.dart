@@ -15,19 +15,27 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = "";
 
   void _handleLogin() async {
-    final username = _usernameController.text;
-    final password = _passwordController.text;
+  final username = _usernameController.text;
+  final password = _passwordController.text;
 
-    final success = await _authService.login(username, password);
-    if (success) {
-      // 로그인 성공 시 팝업 표시
-      _showLoginSuccessDialog();
-    } else {
-      setState(() {
-        _errorMessage = "Invalid username or password";
-      });
-    }
+  if (username.isEmpty || password.isEmpty) {
+    setState(() {
+      _errorMessage = "Username and password cannot be empty.";
+    });
+    return;
   }
+
+  print("Attempting to log in with username: $username");
+
+  final success = await _authService.login(username, password);
+  if (success) {
+    _showLoginSuccessDialog();
+  } else {
+    setState(() {
+      _errorMessage = "Invalid username or password";
+    });
+  }
+}
 
   // 로그인 성공 시 팝업
   void _showLoginSuccessDialog() {
