@@ -1,20 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
-from pymongo import MongoClient
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
-from passlib.context import CryptContext
+
 import os
 
-MONGO_URL = "mongodb://localhost:27017"
-client = AsyncIOMotorClient(MONGO_URL)
-db = client.my_database
-users_collection = db.users
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from schemas import User, UserName, UserLogin
+from models import hash_password, verify_password
+from database import database, users_collection
 
 app = FastAPI()
 
@@ -26,18 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class User(BaseModel):
-    username: str
-    email: str
-    password: str
-    
-class UserName(BaseModel):
-    username: str
-    
-class UserLogin(BaseModel):
-    username: str
-    password: str
 
 
 # 정적 파일 디렉토리 설정
@@ -65,7 +46,7 @@ async def register_user(user: User):
         raise HTTPException(status_code=400, detail="Username or email already exists")
 
     # 비밀번호 해시화
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     user_in_db = User(
         username=user.username, email=user.email, password=hashed_password
     )
@@ -83,7 +64,7 @@ async def login_user(user: UserLogin):
         raise HTTPException(status_code=400, detail="Invalid username")
     
     # 비밀번호 비교
-    if not pwd_context.verify(user.password, existing_user["password"]):
+    if not verify_password(user.password, existing_user["password"]):
         raise HTTPException(status_code=400, detail="Invalid password")
     
     # 로그인 성공
