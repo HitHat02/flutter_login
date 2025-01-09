@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = "";
 
   // FastAPI 서버 URL (로컬 환경에 맞게 변경)
-  final String baseUrl = "http://0.0.0.0:8000";  // 에뮬레이터에서 10.0.2.2 사용
+  final String baseUrl = "http://13.211.150.198:8000";  // 에뮬레이터에서 10.0.2.2 사용
 
   void _handleLogin() async {
     final username = _usernameController.text;
