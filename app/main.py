@@ -26,7 +26,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # 정적 파일 디렉토리 설정
-app.mount("/auth", StaticFiles(directory="build/web", html=True), name="auth")
+app.mount("/home", StaticFiles(directory="build/web", html=True), name="home")
 
 @app.get("/{path:path}")
 async def catch_all(request: Request, path: str):
@@ -91,6 +91,10 @@ async def upload_files(files: List[UploadFile] = File(...)):
     uploaded_file_ids = []
 
     for file in files:
+        # 디버깅: 파일 이름 및 내용 확인
+        print(f"Received file: {file.filename}")
+        print(f"File size: {len(await file.read())} bytes")
+        
         file_path = UPLOAD_DIR / file.filename
         file_extension = file.filename.split(".")[-1]  # 파일 확장자 추출
 
@@ -104,7 +108,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
             "extension": file_extension,
             "uploaded_at": datetime.utcnow(),
         }
-        result = files_collection.insert_one(file_data)
+        result = await files_collection.insert_one(file_data)
         uploaded_file_ids.append(str(result.inserted_id))
 
     return {"message": "Files uploaded successfully", "file_ids": uploaded_file_ids}
