@@ -19,6 +19,7 @@ class FileModel(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     filename: str
     path: str
+    extension: str
     uploaded_at: datetime
 
     class Config:

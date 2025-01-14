@@ -1,8 +1,7 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
 from starlette.requests import Request
-
 from pathlib import Path
 import os
 
@@ -87,8 +86,7 @@ async def read_user(name: UserName):
         raise HTTPException(status_code=400, detail="Username or email already exists")
     return {"message": f"{existing_user}"}
 
-@app.post("/upload")
-async def upload_files(files: List[FileModel] = File(...)):
+async def upload_files(files: List[UploadFile] = File(...)):
     uploaded_file_ids = []
 
     for file in files:
