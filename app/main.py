@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # Directory to store uploaded files
-UPLOAD_DIR = Path("/home/Download")
+UPLOAD_DIR = Path("./Download")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
