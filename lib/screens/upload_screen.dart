@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http_parser/http_parser.dart'; // 추가된 import
 
 // Upload Page
 class UploadPage extends StatefulWidget {
@@ -13,9 +14,9 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage> {
   List<PlatformFile> _selectedFiles = [];
-  final String uploadUrl = "http://13.211.150.198:8000";
+  final String baseUrl = "http://13.211.150.198:8000";
 
-  void _pickFiles() async {
+    void _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
     if (result != null) {
@@ -27,10 +28,16 @@ class _UploadPageState extends State<UploadPage> {
 
   Future<void> _uploadFiles() async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/upload'));
 
       for (var file in _selectedFiles) {
-        request.files.add(await http.MultipartFile.fromPath('files', file.path!));
+        // 웹에서는 file.path가 null이므로 file.bytes를 사용하여 파일을 업로드합니다.
+        request.files.add(http.MultipartFile.fromBytes(
+          'files', 
+          file.bytes!, 
+          filename: file.name,
+          contentType: MediaType('application', 'octet-stream'), // 파일의 콘텐츠 유형
+        ));
       }
 
       var response = await request.send();
@@ -93,11 +100,11 @@ class DownloadPage extends StatefulWidget {
 
 class _DownloadPageState extends State<DownloadPage> {
   List<dynamic> _files = [];
-  final String fetchUrl = "http://13.211.150.198:8000";
+  final String baseUrl = "http://13.211.150.198:8000";
 
   void _fetchFiles() async {
     try {
-      final response = await http.get(Uri.parse(fetchUrl));
+      final response = await http.get(Uri.parse('$baseUrl/files'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -135,7 +142,7 @@ class _DownloadPageState extends State<DownloadPage> {
             trailing: IconButton(
               icon: Icon(Icons.download),
               onPressed: () async {
-                final downloadUrl = "http://your-fastapi-server/download/${_files[index]['id']}";
+                final downloadUrl = 'http://13.211.150.198:8000/download/${_files[index]['id']}';
 
                 try {
                   final response = await http.get(Uri.parse(downloadUrl));

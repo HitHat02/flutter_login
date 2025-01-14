@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
@@ -7,7 +7,7 @@ import os
 
 from .schemas import *
 from .models import hash_password, verify_password
-from .database import db, users_collection, files_collection
+from .db.database import db, users_collection, files_collection
 
 app = FastAPI()
 
@@ -86,12 +86,13 @@ async def read_user(name: UserName):
         raise HTTPException(status_code=400, detail="Username or email already exists")
     return {"message": f"{existing_user}"}
 
+@app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     uploaded_file_ids = []
 
     for file in files:
         file_path = UPLOAD_DIR / file.filename
-        file_extension = file.filename.split(".")[-1]  # Extract file extension
+        file_extension = file.filename.split(".")[-1]  # 파일 확장자 추출
 
         with open(file_path, "wb") as f:
             content = await file.read()
