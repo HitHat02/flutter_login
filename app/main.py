@@ -87,7 +87,7 @@ async def read_user(name: UserName):
     return {"message": f"{existing_user}"}
 
 @app.post("/upload")
-async def upload_files(files: List[UploadFile] = File(...)):
+async def upload_files(files: List[UploadFile]):
     uploaded_file_ids = []
 
     for file in files:
@@ -96,12 +96,12 @@ async def upload_files(files: List[UploadFile] = File(...)):
         print(f"File size: {len(await file.read())} bytes")
         
         file_path = UPLOAD_DIR / file.filename
-        file_extension = file.filename.split(".")[-1]  # 파일 확장자 추출
-
+        
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
 
+        file_extension = file.filename.split(".")[-1]  # 파일 확장자 추출
         file_data = {
             "filename": file.filename,
             "path": str(file_path),

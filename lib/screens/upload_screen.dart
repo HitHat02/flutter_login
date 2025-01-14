@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
-import 'package:http_parser/http_parser.dart'; // 추가된 import
 
 // Upload Page
 class UploadPage extends StatefulWidget {
@@ -15,8 +15,9 @@ class UploadPage extends StatefulWidget {
 class _UploadPageState extends State<UploadPage> {
   List<PlatformFile> _selectedFiles = [];
   final String baseUrl = "http://13.211.150.198:8000";
+  final Dio _dio = Dio();
 
-    void _pickFiles() async {
+  void _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
     if (result != null) {
@@ -28,19 +29,25 @@ class _UploadPageState extends State<UploadPage> {
 
   Future<void> _uploadFiles() async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/upload'));
+      FormData formData = FormData();
 
       for (var file in _selectedFiles) {
-        // 웹에서는 file.path가 null이므로 file.bytes를 사용하여 파일을 업로드합니다.
-        request.files.add(http.MultipartFile.fromBytes(
-          'files', 
-          file.bytes!, 
-          filename: file.name,
-          contentType: MediaType('application', 'octet-stream'), // 파일의 콘텐츠 유형
-        ));
+        formData.files.add(
+          MapEntry(
+            'files',
+            MultipartFile.fromBytes(
+              file.bytes!,
+              filename: file.name,
+              contentType: MediaType('application', 'octet-stream'),
+            ),
+          ),
+        );
       }
 
-      var response = await request.send();
+      Response response = await _dio.post(
+        '$baseUrl/upload',
+        data: formData,
+      );
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,7 +100,7 @@ class _UploadPageState extends State<UploadPage> {
 // Download Page
 class DownloadPage extends StatefulWidget {
   const DownloadPage({Key? key}) : super(key: key);
-  
+
   @override
   _DownloadPageState createState() => _DownloadPageState();
 }
@@ -101,14 +108,15 @@ class DownloadPage extends StatefulWidget {
 class _DownloadPageState extends State<DownloadPage> {
   List<dynamic> _files = [];
   final String baseUrl = "http://13.211.150.198:8000";
+  final Dio _dio = Dio();
 
   void _fetchFiles() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/files'));
+      Response response = await _dio.get('$baseUrl/files');
 
       if (response.statusCode == 200) {
         setState(() {
-          _files = json.decode(response.body);
+          _files = response.data;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,10 +150,13 @@ class _DownloadPageState extends State<DownloadPage> {
             trailing: IconButton(
               icon: Icon(Icons.download),
               onPressed: () async {
-                final downloadUrl = 'http://13.211.150.198:8000/download/${_files[index]['id']}';
+                final downloadUrl = '$baseUrl/download/${_files[index]['id']}';
 
                 try {
-                  final response = await http.get(Uri.parse(downloadUrl));
+                  Response response = await _dio.get(
+                    downloadUrl,
+                    options: Options(responseType: ResponseType.bytes),
+                  );
 
                   if (response.statusCode == 200) {
                     ScaffoldMessenger.of(context).showSnackBar(
