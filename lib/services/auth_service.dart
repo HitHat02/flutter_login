@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  final String baseUrl = "http://0.0.0.0:8000"; // FastAPI 서버 URL
+  final String baseUrl = "http://13.211.150.198:8000"; // FastAPI 서버 URL
 
   Future<bool> login(String username, String password) async {
     final url = Uri.parse('$baseUrl/login');

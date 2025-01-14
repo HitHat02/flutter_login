@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'screens/upload_screen.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -14,11 +14,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'FastAPI Auth',
+      title: 'FastAPI',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(),
+      home: const HomeScreen(),
       routes: {
-        "/home": (context) => const HomeScreen(), // 홈 화면 예제
+        "/home": (context) => const HomeScreen(), // 홈 화면
+        "/auth": (context) => const LoginScreen(), // 로그인 화면
+        "/upload": (context) => const UploadPage(), // 업로드
       },
     );
   }
@@ -32,26 +34,26 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Home")),
-      body: const Center(child: Text("Welcome to the app!")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, "/auth");
+              },
+              child: const Text("Go to Auth"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, "/upload");
+              },
+              child: const Text("Go to Upload & Download"),
+            ),
+          ],
+        ),
+      ),
     );
-  }
-}
-
-class AuthService {
-  final String baseUrl = "http://0.0.0.0:8000"; // FastAPI 서버 URL
-
-  Future<bool> login(String username, String password) async {
-    final url = Uri.parse('$baseUrl/login');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'username': username, 'password': password}),
-    );
-
-    if (response.statusCode == 200) {
-      return true; // 로그인 성공
-    } else {
-      return false; // 로그인 실패
-    }
   }
 }

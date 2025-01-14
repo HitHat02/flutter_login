@@ -1,20 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
-from pymongo import MongoClient
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
-from passlib.context import CryptContext
+from pathlib import Path
 import os
 
-MONGO_URL = "mongodb://localhost:27017"
-client = AsyncIOMotorClient(MONGO_URL)
-db = client.my_database
-users_collection = db.users
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from .schemas import *
+from .models import hash_password, verify_password
+from .db.database import db, users_collection, files_collection
 
 app = FastAPI()
 
@@ -27,17 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class User(BaseModel):
-    username: str
-    email: str
-    password: str
-    
-class UserName(BaseModel):
-    username: str
-    
-class UserLogin(BaseModel):
-    username: str
-    password: str
+# Directory to store uploaded files
+UPLOAD_DIR = Path("/home/Download")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # 정적 파일 디렉토리 설정
@@ -65,7 +50,7 @@ async def register_user(user: User):
         raise HTTPException(status_code=400, detail="Username or email already exists")
 
     # 비밀번호 해시화
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     user_in_db = User(
         username=user.username, email=user.email, password=hashed_password
     )
@@ -83,7 +68,7 @@ async def login_user(user: UserLogin):
         raise HTTPException(status_code=400, detail="Invalid username")
     
     # 비밀번호 비교
-    if not pwd_context.verify(user.password, existing_user["password"]):
+    if not verify_password(user.password, existing_user["password"]):
         raise HTTPException(status_code=400, detail="Invalid password")
     
     # 로그인 성공
@@ -100,3 +85,44 @@ async def read_user(name: UserName):
     if not existing_user:
         raise HTTPException(status_code=400, detail="Username or email already exists")
     return {"message": f"{existing_user}"}
+
+@app.post("/upload", response_model=List[UploadFile])
+async def upload_files(files: List[UploadFile] = File(...)):
+    uploaded_file_ids = []
+
+    for file in files:
+        file_path = UPLOAD_DIR / file.filename
+        file_extension = file.filename.split(".")[-1]  # 파일 확장자 추출
+
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+
+        file_data = {
+            "filename": file.filename,
+            "path": str(file_path),
+            "extension": file_extension,
+            "uploaded_at": datetime.utcnow(),
+        }
+        result = files_collection.insert_one(file_data)
+        uploaded_file_ids.append(str(result.inserted_id))
+
+    return {"message": "Files uploaded successfully", "file_ids": uploaded_file_ids}
+
+@app.get("/files")
+async def list_files():
+    files = list(files_collection.find({}, {"_id": 1, "filename": 1, "path": 1, "extension": 1, "uploaded_at": 1}))
+    return [{"id": str(file["_id"]), "name": file["filename"], "extension": file["extension"], "uploaded_at": file["uploaded_at"]} for file in files]
+
+@app.get("/download/{file_id}")
+async def download_file(file_id: str):
+    file_data = files_collection.find_one({"_id": ObjectId(file_id)})
+
+    if not file_data:
+        return JSONResponse(status_code=404, content={"message": "File not found"})
+
+    file_path = file_data["path"]
+    if not os.path.exists(file_path):
+        return JSONResponse(status_code=404, content={"message": "File not found on server"})
+
+    return FileResponse(file_path, media_type="application/octet-stream", filename=file_data["filename"])
