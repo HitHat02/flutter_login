@@ -115,7 +115,7 @@ async def upload_files(files: List[UploadFile]):
 
 @app.get("/files")
 async def list_files():
-    files = list(files_collection.find({}, {"_id": 1, "filename": 1, "path": 1, "extension": 1, "uploaded_at": 1}))
+    files = list(files_collection.find().pretty())
     return [{"id": str(file["_id"]), "name": file["filename"], "extension": file["extension"], "uploaded_at": file["uploaded_at"]} for file in files]
 
 @app.get("/download/{file_id}")

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/upload_screen.dart';
+import 'screens/download_screen.dart';
 
 
 void main() {
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
         "/home": (context) => const HomeScreen(), // 홈 화면
         "/auth": (context) => const LoginScreen(), // 로그인 화면
         "/upload": (context) => const UploadPage(), // 업로드
+        "/download": (context) => const DownloadPage(), //다운로드
       },
     );
   }
@@ -49,7 +51,14 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, "/upload");
               },
-              child: const Text("Go to Upload & Download"),
+              child: const Text("Go to Upload"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, "/download");
+              },
+              child: const Text("Go to Download"),
             ),
           ],
         ),
