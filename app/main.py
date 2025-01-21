@@ -92,8 +92,6 @@ async def upload_files(files: List[UploadFile]):
 
     for file in files:
         # 디버깅: 파일 이름 및 내용 확인
-        print(f"Received file: {file.filename}")
-        print(f"File size: {len(await file.read())} bytes")
         
         file_path = UPLOAD_DIR / file.filename
         
@@ -110,12 +108,13 @@ async def upload_files(files: List[UploadFile]):
         }
         result = await files_collection.insert_one(file_data)
         uploaded_file_ids.append(str(result.inserted_id))
+        print(f"Inserted document ID: {result.inserted_id}")
 
     return {"message": "Files uploaded successfully", "file_ids": uploaded_file_ids}
 
 @app.get("/files")
 async def list_files():
-    files = list(files_collection.find().pretty())
+    files = list(files_collection.find({}, {"_id": 1, "filename": 1, "path": 1, "extension": 1, "uploaded_at": 1}))
     return [{"id": str(file["_id"]), "name": file["filename"], "extension": file["extension"], "uploaded_at": file["uploaded_at"]} for file in files]
 
 @app.get("/download/{file_id}")
